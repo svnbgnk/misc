@@ -157,6 +157,7 @@ int main(int argc, char const * argv[])
                     if(rValue >=  cValue)
                         ++rValue;
                     Dna rBase(rValue);
+                    tmpread[rpos] = rBase;
                     if(verbose){
                         std::cout << "Mismatch: \n";
                         std::cout << "rBase " << rBase << "\n";
