@@ -2,7 +2,7 @@
 cmake_minimum_required (VERSION 3.0.0)
 
 # Name of project and that it is C++ only.
-project (my_project CXX)
+project (misc CXX)
 set (CUR_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
 
 if (NOT DEFINED ${CMAKE_BUILD_TYPE})
@@ -42,5 +42,7 @@ set (CMAKE_CXX_FLAGS "-g -std=c++17 -pthread -DSEQAN_DISABLE_VERSION_CHECK=YES -
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SEQAN_CXX_FLAGS}")
 
 # Add executable and link against SeqAn dependencies.
-add_executable (my_project my_project.cpp)
-target_link_libraries (my_project ${SEQAN_LIBRARIES})
+add_executable (sample sample.cpp)
+target_link_libraries (sample ${SEQAN_LIBRARIES})
+add_executable (modify modify.cpp)
+target_link_libraries (modify ${SEQAN_LIBRARIES})
