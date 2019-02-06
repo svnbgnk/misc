@@ -130,6 +130,32 @@ void printv(TVector & a){
     std::cout << "\n";
 }
 
+template<typename TPair>
+void printPair(TPair & a){
+    std::cout << "<" << a.i1 << ", " << a.i2 << ">";
+}
+
+struct SARange
+{
+    Pair<uint32_t, uint32_t> range;
+    uint32_t repLength;
+    uint8_t errors;
+    uint32_t shift = 0;
+};
+
+struct Hit
+{
+    uint32_t occ;
+    uint32_t occEnd;
+    uint8_t errors;
+    uint32_t needleId;
+};
+
+void print(Hit & a)
+{
+    std::cout << a.needleId << " @ <" << a.occ << ", " << a.occEnd << ">" << "\t + " << (int)a.errors << "\n";
+}
+
 int main(int argc, char const * argv[])
 {
     ArgumentParser parser("Test");
@@ -172,6 +198,7 @@ int main(int argc, char const * argv[])
     typedef Iter<TIndex, VSTree<TopDown<> > > TIter;
 
     std::vector<std::vector<int> > hitCounters;
+
     hitCounters.resize(errors + 1);
 
     for(int i = 0; i < iterations; ++i){
@@ -187,24 +214,100 @@ int main(int argc, char const * argv[])
         TIndex index(text);
         TIter it(index);
         std::vector<int> hitCounter(errors + 1, 0);
-        auto delegate = [&hitCounter](auto & iter, DnaString const & needle, uint8_t const cerrors)
+        std::vector<Hit> hits;
+        std:vector<SARange> ranges;
+        /*
+        auto delegate = [&hitCounter, &ranges](auto & iter, DnaString const & needle, uint8_t const cerrors)
         {
+//             Pair<int8_t, int8_t> range(iter.fwdIter.vDesc.range.i1, iter.fwdIter.vDesc.range.i2);
+            SARange range;
+            range.errors = cerrors;
+            range.range = Pair<int8_t, int8_t> (iter.fwdIter.vDesc.range.i1, iter.fwdIter.vDesc.range.i2);
+            ranges.push_back(range);
             for (auto occ : getOccurrences(iter)){
                 ++hitCounter[cerrors];
             }
+        };*/
+
+
+        auto delegate = [&hitCounter, &hits](auto & index, auto & saRange, uint32_t const & needleId)
+        {
+//             int shift = saRange.shift;
+            for (uint32_t i = saRange.range.i1; i < saRange.range.i2; ++i){
+                Hit hit;
+                hit.occ = index.fwd.sa[i]; // + shift;
+                hit.occEnd = hit.occ + saRange.repLength;
+                hit.errors = saRange.errors;
+                hit.needleId = needleId;
+                hits.push_back(hit);
+                ++hitCounter[saRange.errors];
+            }
         };
 
+        auto delegateRange = [&ranges](auto & iter, DnaString const & needle, uint8_t const cerrors)
+        {
+//             Pair<int8_t, int8_t> range(iter.fwdIter.vDesc.range.i1, iter.fwdIter.vDesc.range.i2);
+            SARange range;
+            range.repLength = repLength(iter);
+            range.errors = cerrors;
+            range.range = Pair<int8_t, int8_t> (iter.fwdIter.vDesc.range.i1, iter.fwdIter.vDesc.range.i2);
+            ranges.push_back(range);
+        };
+
+
+
         if(hammingDistance)
-            find(0, errors, delegate, index, read, HammingDistance());
+            find(0, errors, delegateRange, index, read, HammingDistance());
         else
-            find(0, errors, delegate, index, read, EditDistance());
+            find(0, errors, delegateRange, index, read, EditDistance());
         if(verbose)
             printv(hitCounter);
+        std::sort(ranges.begin(), ranges.end(), [](SARange & x, SARange & y){
+            if(x.range.i1 == y.range.i1)
+                return(x.errors < y.errors);
+            else
+                return(x.range.i1 < y.range.i1);
+        });
 
+        if(verbose){
+            for(int l = 0; l < ranges.size(); ++l){
+                auto cRange = ranges[l];
+                printPair(cRange.range);
+                std::cout << "\t" << (int)cRange.errors << "\n";
+            }
+        }
+
+        //locate //call global delegate
+        std::vector <uint32_t> lastEnds(errors + 1, 0);
+        for(int l = 0; l < ranges.size(); ++l){
+            auto cRange = ranges[l];
+            uint8_t cE = cRange.errors;
+            if(lastEnds[cE] < cRange.range.i1)
+            {
+                delegate(index, cRange, 0);
+                for(int e = cE; e < errors + 1; ++e)
+                    lastEnds[e] = cRange.range.i2;
+            }
+            else if(lastEnds[cE] < cRange.range.i2)
+            {
+                cRange.range.i1 = lastEnds[cE];
+                delegate(index, cRange, 0);
+                for(int e = cE; e < errors + 1; ++e)
+                    lastEnds[e] = cRange.range.i2;
+            }
+        }
+
+
+        if(verbose){
+            for(int j = 0; j < hits.size(); ++j)
+                print(hits[j]);
+        }
         for(int j = 0; j < hitCounter.size(); ++j){
             hitCounters[j].push_back(hitCounter[j]);
         }
+
     }
+
 
     cout << "Number of Iterations: " << iterations << "\n";
     for(int i = 0; i < errors + 1; ++i){
