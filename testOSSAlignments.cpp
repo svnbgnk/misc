@@ -145,8 +145,6 @@ int main(int argc, char const * argv[])
 
     addOption(parser, ArgParseOption("em", "editMuations", "Allow Insertions and Deletions as mutations"));
 
-//     addOption(parser, ArgParseOption("p", "samplingProb", "Probability of which a reads accepted for the ouput", ArgParseArgument::DOUBLE, "FLOAT"));
-
     addOption(parser, ArgParseOption("v", "verbose", ""));
 
     ArgumentParser::ParseResult res = parse(parser, argc, argv);
@@ -209,7 +207,7 @@ int main(int argc, char const * argv[])
 
     cout << "Number of Iterations: " << iterations << "\n";
     for(int i = 0; i < errors + 1; ++i){
-        cout << "Number of Alignments  with " << i << " errors were found\n";
+        cout << "Number of Alignments  with " << i << " errors:\n";
         double average = accumulate( hitCounters[i].begin(), hitCounters[i].end(), 0.0)/hitCounters[i].size();
         cout << "Average \t\t\t\t\t" << average << endl;
 
