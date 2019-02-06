@@ -46,3 +46,14 @@ add_executable (sample sample.cpp)
 target_link_libraries (sample ${SEQAN_LIBRARIES})
 add_executable (modify modify.cpp)
 target_link_libraries (modify ${SEQAN_LIBRARIES})
+add_executable (split split.cpp)
+target_link_libraries (split ${SEQAN_LIBRARIES})
+add_executable (selectRandom selectRandom.cpp)
+target_link_libraries (selectRandom ${SEQAN_LIBRARIES})
+add_executable (merge merge.cpp)
+target_link_libraries (merge ${SEQAN_LIBRARIES})
+add_executable (testOSSAlignments testOSSAlignments.cpp)
+target_link_libraries (testOSSAlignments ${SEQAN_LIBRARIES})
+
+
+
