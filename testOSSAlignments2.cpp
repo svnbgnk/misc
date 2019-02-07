@@ -285,15 +285,20 @@ int main(int argc, char const * argv[])
             if(lastEnds[cE] < cRange.range.i1)
             {
                 delegate(index, cRange, 0);
-                for(int e = cE; e < errors + 1; ++e)
-                    lastEnds[e] = cRange.range.i2;
+                lastEnds[cE] = cRange.range.i2;
+                // <2,5> 2 <3,8> 1 <6, 7> 2 miss reporting last Interval with 2 errors
+                //but maybe we are sure a range with a smaller error has to smaller than range with larger error
+//                 for(int e = cE; e < errors + 1; ++e)
+//                     lastEnds[e] = cRange.range.i2;
             }
             else if(lastEnds[cE] < cRange.range.i2)
             {
                 cRange.range.i1 = lastEnds[cE];
                 delegate(index, cRange, 0);
-                for(int e = cE; e < errors + 1; ++e)
-                    lastEnds[e] = cRange.range.i2;
+                lastEnds[cE] = cRange.range.i2;
+                //is this one the same case??
+//                 for(int e = cE; e < errors + 1; ++e)
+//                     lastEnds[e] = cRange.range.i2;
             }
         }
 
