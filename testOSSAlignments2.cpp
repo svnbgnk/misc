@@ -135,11 +135,23 @@ void printPair(TPair & a){
     std::cout << "<" << a.i1 << ", " << a.i2 << ">";
 }
 
+template<typename TContainer>
+inline uint32_t minPos(TContainer a, uint8_t size){
+    uint8_t pos = 0;
+    uint32_t value = a[0];
+    for(uint8_t i = 1; i < size; ++i){
+        if(value > a[i]){
+            value = a[i];
+            pos = i;
+        }
+    }
+    return pos;
+}
+
 struct SARange
 {
     Pair<uint32_t, uint32_t> range;
     uint32_t repLength;
-    uint8_t errors;
     uint32_t shift = 0;
 };
 
@@ -150,6 +162,8 @@ struct Hit
     uint8_t errors;
     uint32_t needleId;
 };
+
+
 
 void print(Hit & a)
 {
@@ -215,7 +229,7 @@ int main(int argc, char const * argv[])
         TIter it(index);
         std::vector<int> hitCounter(errors + 1, 0);
         std::vector<Hit> hits;
-        std:vector<SARange> ranges;
+        std:vector<SARange> ranges[errors + 1];
         /*
         auto delegate = [&hitCounter, &ranges](auto & iter, DnaString const & needle, uint8_t const cerrors)
         {
@@ -230,28 +244,27 @@ int main(int argc, char const * argv[])
         };*/
 
 
-        auto delegate = [&hitCounter, &hits](auto & index, auto & saRange, uint32_t const & needleId)
+        auto delegate = [&hitCounter, &hits](auto & index, auto & saRange, uint8_t const cerrors, uint32_t const needleId)
         {
 //             int shift = saRange.shift;
             for (uint32_t i = saRange.range.i1; i < saRange.range.i2; ++i){
                 Hit hit;
                 hit.occ = index.fwd.sa[i]; // + shift;
                 hit.occEnd = hit.occ + saRange.repLength;
-                hit.errors = saRange.errors;
+                hit.errors = cerrors;
                 hit.needleId = needleId;
                 hits.push_back(hit);
-                ++hitCounter[saRange.errors];
+                ++hitCounter[cerrors];
             }
         };
 
         auto delegateRange = [&ranges](auto & iter, DnaString const & needle, uint8_t const cerrors)
         {
-//             Pair<int8_t, int8_t> range(iter.fwdIter.vDesc.range.i1, iter.fwdIter.vDesc.range.i2);
             SARange range;
             range.repLength = repLength(iter);
-            range.errors = cerrors;
-            range.range = Pair<int8_t, int8_t> (iter.fwdIter.vDesc.range.i1, iter.fwdIter.vDesc.range.i2);
-            ranges.push_back(range);
+//             range.errors = cerrors;
+            range.range = Pair<uint32_t, uint32_t> (iter.fwdIter.vDesc.range.i1, iter.fwdIter.vDesc.range.i2);
+            ranges[cerrors].push_back(range);
         };
 
 
@@ -262,23 +275,133 @@ int main(int argc, char const * argv[])
             find(0, errors, delegateRange, index, read, EditDistance());
         if(verbose)
             printv(hitCounter);
-        std::sort(ranges.begin(), ranges.end(), [](SARange & x, SARange & y){
-            if(x.range.i1 == y.range.i1)
-                return(x.errors < y.errors);
-            else
-                return(x.range.i1 < y.range.i1);
-        });
+
+        for(int e = 0; e < errors + 1; ++e){
+            std::sort(ranges[e].begin(), ranges[e].end(), [](SARange & x, SARange & y){
+                if(x.range.i1 == y.range.i1)
+                {
+                    return(x.range.i2 > y.range.i2);
+
+                }
+                else
+                {
+                    return(x.range.i1 < y.range.i1);
+                }
+            });
+        }
 
         if(verbose){
-            for(int l = 0; l < ranges.size(); ++l){
-                auto cRange = ranges[l];
-                printPair(cRange.range);
-                std::cout << "\t" << (int)cRange.errors << "\n";
+            for(int l = 0; l < ranges[errors].size(); ++l){
+
+                for(int e = 0; e < errors + 1; ++e){
+                    if(l >= ranges[e].size()){
+                        std::cout << "\t\t\t";
+                        continue;
+                    }
+                    auto cRange = ranges[e][l];
+                    printPair(cRange.range);
+                    std::cout << "\t\t";
+//                     std::cout << "\t" << (int)cRange.errors << "\t";
+                }
+                std::cout << "\n";
             }
         }
 
+
         //locate //call global delegate
-        std::vector <uint32_t> lastEnds(errors + 1, 0);
+        uint32_t cStart[errors + 1] = { 0 };
+        uint32_t cEnds[errors + 1] = { 0 };
+        uint32_t cPos[errors + 1] = { 0 };
+        std::vector<SARange>::iterator ita [errors + 1];
+        std::vector<SARange>::iterator intvS [errors + 1];
+        for(int e = 0; e < errors + 1; ++e){
+            ita[e] = ranges[e].begin();
+        }
+
+
+        bool checkIntervals = true;
+        bool con = true;
+        int k = 0;
+        uint32_t mymax = numeric_limits<uint32_t>::max();
+        while(con){
+            //connect the next all overlapping intervals
+            if(checkIntervals){
+//                 std::cout << "CheckIntervals\n";
+                for(uint8_t e = 0; e < errors + 1; ++e){
+                    //check if we have any empty intervals select next one then && not at end
+                    if(cStart[e] == cEnds[e]){
+                        //check if we are at end
+                        if(ita[e] == ranges[e].end()){
+                            cStart[e] = mymax;
+                            cEnds[e] = mymax;
+                            continue;
+                        }
+                        intvS[e] = ita[e];
+                        //take first intverval
+                        cStart[e] = (*ita[e]).range.i1;
+                        cEnds[e] = (*ita[e]).range.i2;
+                        ++ita[e];
+                        //add overlapping intevals and concat them
+                        while(cEnds[e] > (*ita[e]).range.i1 && ita[e] != ranges[e].end()){
+                            if(cEnds[e] < (*ita[e]).range.i2)
+                                cEnds[e] = (*ita[e]).range.i2;
+                            ++ita[e];
+                        }
+                    }
+                }
+            }
+            std::cout << "Cumulative Intervals\n";
+            for(int e = 0; e < errors + 1; ++e){
+                std::cout << cStart[e] << "\t";
+            }
+            std::cout << "\n";
+            for(int e = 0; e < errors + 1; ++e){
+                std::cout << cEnds[e] << "\t";
+            }
+            std::cout << "\n";
+
+
+            uint8_t sel = minPos(cStart, errors + 1);
+            //stop at the start of the next interval with less errors
+            uint32_t lastStart = cStart[sel];
+            cStart[sel] = cEnds[sel];
+            if(0 < sel)
+            {
+                for(int i = 1; i < sel; ++i){
+                    if(cStart[sel] > cStart[i])
+                        cStart[sel] = cStart[i];
+                }
+            }
+
+            checkIntervals = false;
+            //Check if we covered intervals with higher errors
+            for(int e = sel + 1; e < errors + 1; ++e){
+                cStart[e] = cEnds[sel];
+                if(cEnds[e] < cEnds[sel]){
+                    cEnds[e] = cEnds[sel];
+                    checkIntervals = true;
+                }
+            }
+
+            if(cStart[sel] == cEnds[sel])
+                checkIntervals = true;
+
+
+            std::cout << "Locate this interval: " << Pair<uint32_t, uint32_t> (lastStart, cStart[sel]) << "\t" << errors << "\n";
+            std::cout << "New Interval: " << cStart[sel] << "\t" << cEnds[sel] << "\n";
+
+            auto & cRange = *(intvS[sel]);
+            cRange.range = Pair<uint32_t, uint32_t> (lastStart, cStart[sel]);
+            delegate(index, cRange, sel, 0);
+
+            con = false;
+            for(int e = 0; e < errors + 1; ++e){
+                if((ita[e]) != ranges[e].end()){
+                    con = true;
+                }
+            }
+        }
+/*
         for(int l = 0; l < ranges.size(); ++l){
             auto cRange = ranges[l];
             uint8_t cE = cRange.errors;
@@ -300,7 +423,7 @@ int main(int argc, char const * argv[])
 //                 for(int e = cE; e < errors + 1; ++e)
 //                     lastEnds[e] = cRange.range.i2;
             }
-        }
+        }*/
 
 
         if(verbose){
