@@ -434,7 +434,7 @@ int main(int argc, char const * argv[])
 
             for(int e = 0; e < errors + 1; ++e){
                 //check if we finished current interval
-                if((*ita[e]).range.i1 == (*ita[e]).range.i2){
+                if((*ita[e]).range.i1 == (*ita[e]).range.i2 && ita[e] != ranges[e].end()){
                     ++ita[e];
                     while(ita[e] != ranges[e].end()){
                         //new Interval
@@ -461,6 +461,7 @@ int main(int argc, char const * argv[])
             bool con = false;
             for(int e = 0; e < errors + 1; ++e){
                 if((ita[e]) != ranges[e].end()){
+                    std::cout << "Con: " << e << "\n";
                     con = true;
                 }
             }
