@@ -258,6 +258,19 @@ int main(int argc, char const * argv[])
             }
         };
 
+
+        auto delegate2 = [&hitCounter, &hits](auto & index, auto & saRange, uint8_t const cerrors, uint32_t const needleId)
+        {
+//             int shift = saRange.shift;
+            Hit hit;
+            hit.occ = index.fwd.sa[saRange.range.i1]; // + shift;
+            hit.occEnd = hit.occ + saRange.repLength;
+            hit.errors = cerrors;
+            hit.needleId = needleId;
+            hits.push_back(hit);
+            ++hitCounter[cerrors];
+        };
+
         auto delegateRange = [&ranges](auto & iter, DnaString const & needle, uint8_t const cerrors)
         {
             SARange range;
@@ -307,7 +320,7 @@ int main(int argc, char const * argv[])
             }
         }
 
-
+/*
         //locate //call global delegate
         uint32_t cStart[errors + 1] = { 0 };
         uint32_t cEnds[errors + 1] = { 0 };
@@ -317,7 +330,6 @@ int main(int argc, char const * argv[])
         for(int e = 0; e < errors + 1; ++e){
             ita[e] = ranges[e].begin();
         }
-
 
         bool checkIntervals = true;
         bool con = true;
@@ -400,6 +412,113 @@ int main(int argc, char const * argv[])
                     con = true;
                 }
             }
+        }*/
+
+
+        uint32_t mymax = numeric_limits<uint32_t>::max();
+        //locate //call global delegate
+        uint32_t cEnds[errors + 1] = { 0 };
+        std::vector<SARange>::iterator ita [errors + 1];
+        for(int e = 0; e < errors + 1; ++e){
+            ita[e] = ranges[e].begin();
+            cEnds[e] = (*ita[e]).range.i2;
+        }
+
+
+        while(true){
+            std::cout << "En ";
+            for(int e = 0; e < errors + 1; ++e){
+                std::cout << cEnds[e] << "\t";
+            }
+            std::cout << "\n";
+
+            for(int e = 0; e < errors + 1; ++e){
+                //check if we finished current interval
+                if((*ita[e]).range.i1 == (*ita[e]).range.i2){
+                    ++ita[e];
+                    while(ita[e] != ranges[e].end()){
+                        //new Interval
+                        if(cEnds[e] < (*ita[e]).range.i1){
+                            cEnds[e] = (*ita[e]).range.i2;
+                            break;
+                        }
+                        //going into an overlapping Interval
+                        else if(cEnds[e] < (*ita[e]).range.i2){
+                            //already reported up to that end point
+                            (*ita[e]).range.i1 = cEnds[e];
+                            cEnds[e] = (*ita[e]).range.i2;
+                            break;
+                        }
+                        //already checked Interval
+                        else
+                        {
+                            ++ita[e];
+                        }
+                    }
+                }
+            }
+
+            bool con = false;
+            for(int e = 0; e < errors + 1; ++e){
+                if((ita[e]) != ranges[e].end()){
+                    con = true;
+                }
+            }
+            if(!con)
+                break;
+
+
+            //select smallest SAValue with smallest error
+            uint8_t sel = 0;
+            uint32_t value = mymax;
+            for(int e = 0; e < errors + 1; ++e){
+                if((*ita[e]).range.i1 < value && ita[e] != ranges[e].end()){
+                    value = (*ita[e]).range.i1;
+                    sel = e;
+                }
+            }
+
+            for(int e = 0; e < errors + 1; ++e){
+                if(ita[e] != ranges[e].end())
+                    std::cout << (*ita[e]).range.i1 << "\t";
+                else
+                    std::cout << "na\t";
+            }
+            std::cout << "\n";
+
+            std::cout << "Sel: " << (int)sel << "\n";
+
+            //report SA-Value
+            delegate2(index, (*ita[sel]), sel, 0);
+            //Skip same SA-Value with higher error
+            for(int e = sel + 1; e < errors + 1; ++e){
+                if((*ita[sel]).range.i1 == (*ita[e]).range.i1 && ita[e] != ranges[e].end()){
+                    ++(*ita[e]).range.i1;
+                    /*
+                    if((*ita[e]).range.i1 == (*ita[e]).range.i2)
+                        ++ita[e];*/
+                }
+            }
+
+
+            for(int e = 0; e < errors + 1; ++e){
+                if(ita[e] != ranges[e].end())
+                    std::cout << (*ita[e]).range.i1 << "\t";
+                else
+                    std::cout << "na\t";
+            }
+            std::cout << "\n";
+
+            std::cout << "Reported Value: " << (*ita[sel]).range.i1 << "\n";
+            //select next SA-Value (withhing ranges)
+
+            ++(*ita[sel]).range.i1;
+           /*
+            if((*ita[sel]).range.i1 == (*ita[sel]).range.i2 && ita[sel] != ranges[sel].end())
+                ++ita[sel];*/
+
+
+
         }
 /*
         for(int l = 0; l < ranges.size(); ++l){
