@@ -517,9 +517,6 @@ int main(int argc, char const * argv[])
            /*
             if((*ita[sel]).range.i1 == (*ita[sel]).range.i2 && ita[sel] != ranges[sel].end())
                 ++ita[sel];*/
-
-
-
         }
 /*
         for(int l = 0; l < ranges.size(); ++l){
