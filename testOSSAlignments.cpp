@@ -15,6 +15,8 @@
 
 #include <stdlib.h>     /* srand, rand */
 #include <time.h>       /* time */
+#include "oss_context.h"
+#include "find2_index_approx_extension.h"
 
 using namespace seqan;
 using namespace std;
@@ -122,12 +124,14 @@ inline void find(const int minErrors,
     }
 }
 
-template<typename TVector>
-void printv(TVector & a){
+// template<typename TVector>
+void printv(std::vector<int> & a){
     for(int i = 0; i < a.size(); ++i){
-        std::cout << a[i] << ", ";
+        if(i != 0)
+            std::cout << ", ";
+        std::cout << a[i];
     }
-    std::cout << "\n";
+//     std::cout << "\n";
 }
 
 int main(int argc, char const * argv[])
@@ -145,6 +149,10 @@ int main(int argc, char const * argv[])
 
     addOption(parser, ArgParseOption("em", "editMuations", "Allow Insertions and Deletions as mutations"));
 
+    addOption(parser, ArgParseOption("mv", "myversion", "Use my version used in yara"));
+
+//     addOption(parser, ArgParseOption("iv", "itv", "Use my version with in text verification"));
+
     addOption(parser, ArgParseOption("v", "verbose", ""));
 
     ArgumentParser::ParseResult res = parse(parser, argc, argv);
@@ -161,12 +169,15 @@ int main(int argc, char const * argv[])
     getOptionValue(iterations, parser, "iterations");
     bool hammingDistance = isSet(parser, "hammingDistance");
     bool editMuations = isSet(parser, "editMuations");
+    bool myversion = isSet(parser, "myversion");
+
+    bool itv = false; //isSet(parser, "itv"); TODO need to use need ITV from yara
     bool verbose = isSet(parser, "verbose");
 
     time_t seed = std::time(nullptr);
     std::srand(seed);
 
-    typedef DnaString TText;
+    typedef StringSet<DnaString> TText;
     typedef FastFMIndexConfig<void, uint32_t, 2, 1> TMyFastConfig;
     typedef Index<TText, BidirectionalIndex<FMIndex<void, TMyFastConfig> > > TIndex;
     typedef Iter<TIndex, VSTree<TopDown<> > > TIter;
@@ -177,50 +188,84 @@ int main(int argc, char const * argv[])
     for(int i = 0; i < iterations; ++i){
 
         TText text;
-        generateText(text, length + 2 * errors);
-        TText read = infix(text, errors, length + errors);
+        DnaString rand;
+        generateText(rand, length + 2 * errors);
+        appendValue(text, rand);
+        appendValue(text, "A");
+        DnaString read = infix(text[0], errors, length + errors);
         if(mutations > 0)
             mutate(read, mutations, editMuations);
 
         if(verbose)
-            std::cout << text << "\nRead: " << read << "\n";
+            std::cout << text[0] << "\n" << read << " (read)\n";
         TIndex index(text);
         TIter it(index);
         std::vector<int> hitCounter(errors + 1, 0);
-        auto delegate = [&hitCounter](auto & iter, DnaString const & needle, uint8_t const cerrors)
+
+        auto delegate = [&hitCounter](auto const & iter, auto const needle, uint8_t const cerrors)
         {
             for (auto occ : getOccurrences(iter)){
                 ++hitCounter[cerrors];
             }
         };
 
-        if(hammingDistance)
-            find(0, errors, delegate, index, read, HammingDistance());
+        auto delegate2 = [&hitCounter](OSSContext & ossContext, auto const & iter, auto & needle, uint32_t const needleId, uint8_t const cerrors, bool const rev)
+        {
+            for (auto occ : getOccurrences(iter)){
+                ++hitCounter[cerrors];
+            }
+        };
+        auto delegateDirect = [&hitCounter](OSSContext & ossContext, auto const & start, auto const & end, auto & needle, uint32_t const needleId, uint8_t cerrors)
+        {
+            ++hitCounter[cerrors];
+            std::cout << "DDDD\n";
+        };
+
+
+        if(myversion)
+        {
+            OSSContext ossContext;
+            ossContext.itv = itv;
+            ossContext.loadInputParameters(errors, errors, length, 1);
+            StringSet<DnaString> reads;
+            appendValue(reads, read);
+            if(hammingDistance)
+                find(0, errors, errors, ossContext, delegate2, delegateDirect, index, reads, HammingDistance());
+            else
+                find(0, errors, errors, ossContext, delegate2, delegateDirect, index, reads, EditDistance());
+        }
         else
-            find(0, errors, delegate, index, read, EditDistance());
-        if(verbose)
+        {
+            if(hammingDistance)
+                find(0, errors, delegate, index, read, HammingDistance());
+            else
+                find(0, errors, delegate, index, read, EditDistance());
+        }
+        if(verbose){
             printv(hitCounter);
+            std::cout << "\t Sum:  " << accumulate(hitCounter.begin(), hitCounter.end(), 0.0) << "\n";
+        };
 
         for(int j = 0; j < hitCounter.size(); ++j){
             hitCounters[j].push_back(hitCounter[j]);
         }
     }
 
-    cout << "Number of Iterations: " << iterations << "\n";
+    cout << "Used " << iterations << " iterations.\n\n";
+    double sum = 0;
     for(int i = 0; i < errors + 1; ++i){
         cout << "Number of Alignments  with " << i << " errors:\n";
         double average = accumulate( hitCounters[i].begin(), hitCounters[i].end(), 0.0)/hitCounters[i].size();
-        cout << "Average \t\t\t\t\t" << average << endl;
-
+        cout << "Average:  \t\t\t\t\t" << average << endl;
+        sum += average;
         std::vector<double> diff(hitCounters[i].size());
         std::transform(hitCounters[i].begin(), hitCounters[i].end(), diff.begin(), [average](double x) { return x - average; });
         double sq_sum = std::inner_product(diff.begin(), diff.end(), diff.begin(), 0.0);
         double stdev = std::sqrt(sq_sum / hitCounters[i].size());
-        cout << "Standart diviation \t\t\t\t" << stdev << endl;
+        cout << "Standart deviation:  \t\t\t\t" << stdev << endl;
     }
 
-
-    std::cout << "Finished!\n";
+    std::cout << "\nAll: \t\t\t\t\t\t" << sum << "\n";
 
     return 0;
 }
