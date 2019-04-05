@@ -194,5 +194,14 @@ Using bashscripts in ./bashscripts and reads in ./reads
 
  $ benchmark_f2.sh map100.log srv/public/svnbngk/Data/hg38_N_index/ DATA/reads/illumina/illumina_1.fa DATA/hg38_N_index/ mappability100
 
+Benchmarking Dream-Yara on a bidirectional index (based on EPR dictionaries) use flag -of
+
+Benchmarking Dream-Yara  with -ft none on a unidirectional Index
+ $ git checkout yaraben
+To use my fix for mapping without an filter. 
+
+
+
+
 
 
