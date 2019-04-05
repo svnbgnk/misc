@@ -139,8 +139,10 @@ MapMap
 ~~~~~~~~~~~~~~~~~~~
 
 Computation of Sequence Mappability
- $ dream_yara_mappability /srv/public/svnbngk/Data/hg38_N_index/ -b 1 -K 100 -E 3 -T 5 -s 0 -t 20 -o 35 -v -i -O /srv/public/svnbngk/Data/hg38_N_index/mappability5E3 
+ $ dream_yara_mappability /srv/public/svnbngk/Data/hg38_N_index/ -b 1 -K 100 -E 3 -T 5 -s 0 -t 20 -o 35 -v -i -O /srv/public/svnbngk/Data/hg38_N_index/mappability5E3
+
  $ dream_yara_mappability /srv/public/svnbngk/Data/hg38_N_index/ -b 1 -K 100 -E 2 -T 5 -s 0 -t 20 -o 35 -v -i -O /srv/public/svnbngk/Data/hg38_N_index/mappability5E2 
+
  $ dream_yara_mappability /srv/public/svnbngk/Data/hg38_N_index/ -b 1 -K 100 -E 1 -T 5 -s 0 -t 20 -o 35 -v -i -O /srv/public/svnbngk/Data/hg38_N_index/mappability5E1 
  $ dream_yara_mappability /srv/public/svnbngk/Data/hg38_N_index/ -b 1 -K 100 -E 3 -T 5 -s 0 -t 20 -o 35 -v -O /srv/public/svnbngk/Data/hg38_N_index/mappability5H3 
  $ dream_yara_mappability /srv/public/svnbngk/Data/hg38_N_index/ -b 1 -K 100 -E 2 -T 5 -s 0 -t 20 -o 35 -v -O /srv/public/svnbngk/Data/hg38_N_index/mappability5H2 
@@ -170,9 +172,13 @@ Computation of Sequence Mappability
 Using bashscripts in ./bashscripts
 
  $ benchmark_v2.sh master.log /srv/public/svnbngk/Data/hg38_N_index/ /srv/public/svnbngk/Data/reads/illumina/illumina_1.fa
+
  $ benchmark_hamming.sh masterHamming.log /srv/public/svnbngk/Data/hg38_N_index/ /srv/public/svnbngk/Data/reads/illumina/illumina_1.fa
+
  $ benchmark_f2.sh map5.log srv/public/svnbngk/Data/hg38_N_index/ /srv/public/svnbngk/Data/reads/illumina/illumina_1.fa /srv/public/svnbngk/Data/hg38_N_index/ mappability5
+
  $ benchmark_f2.sh map10.log srv/public/svnbngk/Data/hg38_N_index/ /srv/public/svnbngk/Data/reads/illumina/illumina_1.fa /srv/public/svnbngk/Data/hg38_N_index/ mappability10
+
  $ benchmark_f2.sh map100.log srv/public/svnbngk/Data/hg38_N_index/ /srv/public/svnbngk/Data/reads/illumina/illumina_1.fa /srv/public/svnbngk/Data/hg38_N_index/ mappability100
 
 
