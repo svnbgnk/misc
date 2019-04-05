@@ -59,6 +59,8 @@ Count alternative Alignments of a single Occurrence when search with up 3 errors
   $ testOSSAlignments -l 100 -mv -e 3
 
 
+MapMap Instructions
+----------------------------
 
 
 MapMap Short Instructions
