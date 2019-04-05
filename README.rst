@@ -138,10 +138,9 @@ With 1 read error
 MapMap
 ~~~~~~~~~~~~~~~~~~~
 
-Computation of Sequence Mappability
-::
-T = 5
+Computation of Sequence Mappability:
 
+T = 5
  $ dream_yara_mappability DATA/hg38_N_index/ -b 1 -K 100 -E 3 -T 5 -s 0 -t 20 -o 35 -v -i -O DATA/hg38_N_index/mappability5E3
 
  $ dream_yara_mappability DATA/hg38_N_index/ -b 1 -K 100 -E 2 -T 5 -s 0 -t 20 -o 35 -v -i -O DATA/hg38_N_index/mappability5E2
@@ -181,7 +180,7 @@ T = 100
  $ dream_yara_mappability DATA/hg38_N_index/ -b 1 -K 100 -E 1 -T 100 -s 0 -t 20 -o 35 -v -O DATA/hg38_N_index/mappability100H1
 
 
-Using bashscripts in ./bashscripts
+Using bashscripts in ./bashscripts and reads in ./reads
 
  $ benchmark_v2.sh master.log DATA/hg38_N_index/ DATA/reads/illumina/illumina_1.fa
 
