@@ -89,7 +89,8 @@ Acquiring hg38.fa
  $ mkdir bin
  $ cp hg38.fa bin/0.fa
 
-Build Index (requires 200GB of secondary memory)
+
+Building the Index (requires 200GB of secondary memory)
 ::
  $ dream_yara_indexer --threads 8 --output-prefix DATA/hg38_N_index/ DATA/reference/bin/*.fa -td /srv/public/svnbngk/tmp/
 
