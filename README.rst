@@ -79,7 +79,7 @@ MapMap setup (requires 6-7 GB of RAM)
 
 
 
-Acquire hg38.fa
+Acquiring hg38.fa
 ::
 
  $ DATA/reference
