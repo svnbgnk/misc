@@ -68,6 +68,7 @@ MapMap setup (requires 6-7 GB of RAM)
 ::
 
  $ git clone --recurse-submodules https://github.com/svnbgnk/dream_yara.git
+ $ git checkout oss
  $ cd dream_yara/include/seqan/
  $ git remote add upstream https://github.com/svnbgnk/seqan.git
  $ git checkout upstream/mappa 
