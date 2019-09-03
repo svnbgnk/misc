@@ -47,6 +47,8 @@ int main(int argc, char const * argv[])
 
     addOption(parser, ArgParseOption("nn", "noN", "Do not allow n in the sampled reads"));
 
+    addOption(parser, ArgParseOption("s", "seed", "Seed from sampling and modifying", ArgParseArgument::INTEGER, "INT"));
+
     addOption(parser, ArgParseOption("v", "verbose", ""));
 
     ArgumentParser::ParseResult res = parse(parser, argc, argv);
@@ -54,7 +56,7 @@ int main(int argc, char const * argv[])
         return res == ArgumentParser::PARSE_ERROR;
 
     CharString referencePath, outputPath;
-    int n = 10, l = 100, e = 3, nmod = 10;
+    int n = 10, l = 100, e = 3, nmod = 10, seed = 0;
     float probInsertion = 0.0, probDeletion = 0.0;
 
 
@@ -67,6 +69,7 @@ int main(int argc, char const * argv[])
     getOptionValue(probInsertion, parser, "probInsertion");
     getOptionValue(probDeletion, parser, "probDeletion");
     bool noN = isSet(parser, "noN");
+    getOptionValue(seed, parser, "seed");
     bool verbose = isSet(parser, "verbose");
 
 
@@ -88,6 +91,7 @@ int main(int argc, char const * argv[])
 
     //start loop
     uint32_t k = 0;
+    srand(seed);
     for(uint32_t i = 0; length(sampledReads) < n; ++i)
     {
 
