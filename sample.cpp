@@ -45,6 +45,8 @@ int main(int argc, char const * argv[])
 
     addOption(parser, ArgParseOption("pd", "probDeletion", "probability Deletion", ArgParseArgument::DOUBLE, "DOUBLE"));
 
+    addOption(parser, ArgParseOption("nn", "noN", "Do not allow n in the sampled reads"));
+
     addOption(parser, ArgParseOption("v", "verbose", ""));
 
     ArgumentParser::ParseResult res = parse(parser, argc, argv);
@@ -55,6 +57,7 @@ int main(int argc, char const * argv[])
     int n = 10, l = 100, e = 3, nmod = 10;
     float probInsertion = 0.0, probDeletion = 0.0;
 
+
     getOptionValue(referencePath, parser, "reference");
     getOptionValue(outputPath, parser, "output");
     getOptionValue(n, parser, "number");
@@ -63,15 +66,17 @@ int main(int argc, char const * argv[])
     getOptionValue(e, parser, "errors");
     getOptionValue(probInsertion, parser, "probInsertion");
     getOptionValue(probDeletion, parser, "probDeletion");
+    bool noN = isSet(parser, "noN");
     bool verbose = isSet(parser, "verbose");
+
 
     srand (time(NULL));
     StringSet<CharString> idsReads;
-    StringSet<DnaString> sampledReads;
+    StringSet<Dna5String> sampledReads;
 
     SeqFileIn seqFileIn(toCString(referencePath));
     StringSet<CharString> ids;
-    StringSet<DnaString> reference;
+    StringSet<Dna5String> reference;
 
     readRecords(ids, reference, seqFileIn);
 
@@ -89,14 +94,29 @@ int main(int argc, char const * argv[])
         uint32_t rint = rand() % total_length;
         TPos result;
         posLocalize(result, rint, limits);
+        bool valid = false;
         if(verbose)
             cout << "result: " << result << "\n";
-        if(length(reference[getSeqNo(result)]) > getSeqOffset(result) + l)
+        if((length(reference[getSeqNo(result)]) > getSeqOffset(result) + l))
+            valid = true;
+        Dna5String tmpread = infix(reference[getSeqNo(result)], getSeqOffset(result), getSeqOffset(result) + l);
+        if(valid && noN){
+            for(uint32_t p = 0; p < length(tmpread); ++p){
+                if (tmpread[p] == 'N'){
+                    valid = false;
+                    if (verbose)
+                        std::cout << "Contains N: " << tmpread << "\n";
+                    break;
+                }
+            }
+        }
+        if(valid)
         {
             if(verbose)
                 std::cout << "valid" << "\n";
-            DnaString tmpread = infix(reference[getSeqNo(result)], getSeqOffset(result), getSeqOffset(result) + l);
-            std::cout << "sampled read: " << tmpread << "\n";
+
+            if (verbose)
+                std::cout << "sampled read: " << tmpread << "\n";
             appendValue(sampledReads, tmpread);
             appendValue(idsReads, to_string(k));
             ++k;
@@ -108,7 +128,7 @@ int main(int argc, char const * argv[])
 
     //save sampled Reads
     auto outputPathSampled = outputPath;
-    outputPathSampled += "/sampledReads.fa";
+    outputPathSampled += ".fa";
     SeqFileOut seqFileout(toCString(outputPathSampled));
     for(uint32_t i = 0; i < length(sampledReads); ++i){
         writeRecord(seqFileout, idsReads[i], sampledReads[i]);
@@ -116,12 +136,16 @@ int main(int argc, char const * argv[])
 //     writeRecord(seqFileout, idsReads, sampledReads);
     close(seqFileout);
 
+    if (nmod == 0)
+        return 0;
+
     StringSet<DnaString> modifiedReads;
 
 
     for(uint32_t k = 0; k < length(sampledReads); ++k)
     {
-        std::cout << "At sampled read: " << k << "\n";
+	if(verbose)
+             std::cout << "At sampled read: " << k << "\n";
         for(uint32_t j = 0; j < nmod; ++j)
         {
             DnaString tmpread;
@@ -130,7 +154,7 @@ int main(int argc, char const * argv[])
             }else{
                 if(verbose)
                     cout << "reverseComplement\n";
-                DnaStringReverseComplement myModifier(sampledReads[k]);
+                Dna5StringReverseComplement myModifier(sampledReads[k]);
                 tmpread = myModifier;
             }
 
@@ -195,7 +219,7 @@ int main(int argc, char const * argv[])
 
     //save sampled Reads
     auto outputPathModified = outputPath;
-    outputPathModified += "/modifiedReads.fa";
+    outputPathModified += "mod.fa";
     SeqFileOut seqFileout2(toCString(outputPathModified));
     for(uint32_t i = 0; i < length(modifiedReads); ++i){
         writeRecord(seqFileout2, to_string(i), modifiedReads[i]);

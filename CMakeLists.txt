@@ -54,8 +54,10 @@ add_executable (merge merge.cpp)
 target_link_libraries (merge ${SEQAN_LIBRARIES})
 add_executable (testOSSAlignments testOSSAlignments.cpp)
 target_link_libraries (testOSSAlignments ${SEQAN_LIBRARIES})
-add_executable (testOSSAlignments2 testOSSAlignments2.cpp)
-target_link_libraries (testOSSAlignments2 ${SEQAN_LIBRARIES})
-
-
+#add_executable (testOSSAlignments2 testOSSAlignments2.cpp)
+#target_link_libraries (testOSSAlignments2 ${SEQAN_LIBRARIES})
+add_executable (testITV testITV.cpp)
+target_link_libraries (testITV ${SEQAN_LIBRARIES})
+add_executable (testITV_old testITV_old.cpp)
+target_link_libraries (testITV_old ${SEQAN_LIBRARIES})
 
